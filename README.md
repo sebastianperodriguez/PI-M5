@@ -185,13 +185,14 @@ Crea un commit agregando o modificando un archivo.
 
 ## Testing
 
-El proyecto incluye **33 tests unitarios** con Vitest:
+El proyecto incluye **37 tests unitarios** con Vitest:
 
 | Archivo | Cobertura |
 |---------|-----------|
 | `tests/tool.test.ts` | Validación de schemas (inputs válidos e inválidos) |
 | `tests/github.test.ts` | Operaciones de GitHub con Octokit mockeado y casos edge |
 | `tests/error.test.ts` | Transformación de errores a mensajes amigables |
+| `tests/retry.test.ts` | Retry con exponential backoff (rate limiting y errores de red) |
 
 Ejecutá los tests:
 
@@ -221,6 +222,10 @@ src/
 │   ├── list-issues.ts
 │   └── create-commit.ts
 └── utils/                # Utilidades comunes
+    ├── logging.ts         #   Logger con niveles (debug, info, warn, error)
+    ├── retry.ts           #   Retry con exponential backoff (rate limiting)
+    ├── server.ts          #   Factory createServer()
+    └── types.ts           #   Tipos TypeScript compartidos
 tests/                    # Tests unitarios con Vitest
 ```
 
