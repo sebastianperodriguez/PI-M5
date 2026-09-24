@@ -1,8 +1,11 @@
 import { ListRepositoriesSchema } from '../schemas/index.js';
 import { listRepositories } from '../github/operations.js';
 import { handleGitHubError, getErrorMessage } from '../errors/handler.js';
+import { logger } from '../utils/logging.js';
 
 export async function listRepositoriesTool(input: unknown) {
+  logger.info('listRepositoriesTool invocada');
+
   const result = ListRepositoriesSchema.safeParse(input);
 
   if (!result.success) {

@@ -1,8 +1,18 @@
 import { CreateCommitSchema } from "../schemas/index.js";
 import { createCommit } from "../github/operations.js";
 import { handleGitHubError, getErrorMessage } from "../errors/handler.js";
+import { logger } from "../utils/logging.js";
 
 export async function createCommitTool(input: unknown) {
+  logger.info(
+    `createCommitTool invocada con input: ${JSON.stringify({
+      owner: (input as { owner?: string })?.owner,
+      repo: (input as { repo?: string })?.repo,
+      path: (input as { path?: string })?.path,
+      branch: (input as { branch?: string })?.branch,
+    })}`
+  );
+
   const result = CreateCommitSchema.safeParse(input);
 
   if (!result.success) {

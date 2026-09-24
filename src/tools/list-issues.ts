@@ -1,8 +1,17 @@
 import { ListIssuesSchema } from "../schemas/index.js";
 import { listIssues } from "../github/operations.js";
 import { handleGitHubError, getErrorMessage } from "../errors/handler.js";
+import { logger } from "../utils/logging.js";
 
 export async function listIssuesTool(input: unknown) {
+  logger.info(
+    `listIssuesTool invocada con input: ${JSON.stringify({
+      owner: (input as { owner?: string })?.owner,
+      repo: (input as { repo?: string })?.repo,
+      state: (input as { state?: string })?.state,
+    })}`
+  );
+
   const result = ListIssuesSchema.safeParse(input);
 
   if (!result.success) {

@@ -13,6 +13,7 @@ import {
   listRepositories,
 } from '../github/operations.js';
 import { handleGitHubError, getErrorMessage } from '../errors/handler.js';
+import { logger } from '../utils/logging.js';
 
 export function registerTools(server: McpServer): void {
   server.tool(
@@ -20,6 +21,7 @@ export function registerTools(server: McpServer): void {
     'Lista los repositorios del usuario autenticado',
     {},
     async () => {
+      logger.info('Tool list-repositories invocada');
       try {
         const repos = await listRepositories();
         const reposList = repos
@@ -50,6 +52,7 @@ export function registerTools(server: McpServer): void {
       private: CreateRepositorySchema.shape.private,
     },
     async ({ name, description, private: isPrivate }) => {
+      logger.info(`Tool create-repository invocada con name="${name}" private=${isPrivate}`);
       try {
         const repo = await createRepository({ name, description, private: isPrivate });
         return {
@@ -80,6 +83,7 @@ export function registerTools(server: McpServer): void {
       body: CreateIssueSchema.shape.body,
     },
     async ({ owner, repo, title, body }) => {
+      logger.info(`Tool create-issue invocada owner="${owner}" repo="${repo}" title="${title}"`);
       try {
         const issue = await createIssue({ owner, repo, title, body });
         return {
@@ -109,6 +113,7 @@ export function registerTools(server: McpServer): void {
       state: ListIssuesSchema.shape.state,
     },
     async ({ owner, repo, state }) => {
+      logger.info(`Tool list-issues invocada owner="${owner}" repo="${repo}" state="${state}"`);
       try {
         const issues = await listIssues({ owner, repo, state });
         const issuesList = issues
@@ -144,6 +149,7 @@ export function registerTools(server: McpServer): void {
       branch: CreateCommitSchema.shape.branch,
     },
     async ({ owner, repo, message, content, path, branch }) => {
+      logger.info(`Tool create-commit invocada owner="${owner}" repo="${repo}" path="${path}" branch="${branch}"`);
       try {
         const commit = await createCommit({ owner, repo, message, content, path, branch });
         return {
