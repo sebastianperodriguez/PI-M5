@@ -1,1 +1,0 @@
-{"version":3,"file":"handler.d.ts","sourceRoot":"","sources":["../../src/errors/handler.ts"],"names":[],"mappings":"AAAA,OAAO,EACL,QAAQ,EACR,eAAe,EAKhB,MAAM,YAAY,CAAC;AAQpB,wBAAgB,iBAAiB,CAC/B,KAAK,EAAE,OAAO,EACd,OAAO,CAAC,EAAE,MAAM,GACf,QAAQ,CAmDV;AAED,wBAAgB,qBAAqB,CAAC,OAAO,EAAE,MAAM,GAAG,eAAe,CAEtE;AAED,wBAAgB,eAAe,CAAC,KAAK,EAAE,OAAO,GAAG,MAAM,CAUtD"}
