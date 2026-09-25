@@ -1,4 +1,5 @@
 import { RateLimitError, NetworkError } from '../errors/index.js';
+import { logger } from './logging.js';
 import type { AsyncOperation, RetryOptions } from './types.js';
 
 const DEFAULT_MAX_RETRIES = 3;
@@ -40,7 +41,7 @@ export async function withRetry<T>(
         maxDelayMs
       );
 
-      console.error(`[RETRY] Intento ${attempt + 1}/${maxRetries} falló. Reintentando en ${Math.round(delay / 1000)}s...`);
+      logger.warn(`Intento ${attempt + 1}/${maxRetries} falló. Reintentando en ${Math.round(delay / 1000)}s...`);
       await sleep(delay);
     }
   }
