@@ -1,7 +1,10 @@
 import { Octokit } from '@octokit/rest';
+import { retry } from '@octokit/plugin-retry';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+const GitHubClient = Octokit.plugin(retry);
 
 let octokit: Octokit | null = null;
 
@@ -19,7 +22,13 @@ export function getOctokit(): Octokit {
     );
   }
 
-  octokit = new Octokit({ auth: token });
+  octokit = new GitHubClient({
+    auth: token,
+    retry: {
+      doNotRetry: [400, 401, 404, 422],
+      retries: 3,
+    },
+  });
   return octokit;
 }
 
