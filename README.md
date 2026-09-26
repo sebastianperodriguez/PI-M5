@@ -63,6 +63,13 @@ GITHUB_TOKEN=ghp_tu_token_aqui
 
 > ⚠️ Si cambias los permisos de un token existente, debes **regenerar el token** para que los cambios tomen efecto.
 
+### Variables de entorno
+
+| Variable | Requerido | Descripción |
+|----------|-----------|-------------|
+| `GITHUB_TOKEN` | ✅ | Token de acceso de GitHub |
+| `LOG_LEVEL` | ❌ | Nivel de logging: `debug`, `info`, `warn`, `error` (por defecto `info`) |
+
 ## Uso
 
 ### Ejecutar como servidor de desarrollo
@@ -200,33 +207,79 @@ Ejecutá los tests:
 npm test
 ```
 
+## Logging
+
+El servidor incluye un logger estructurado en `src/utils/logging.ts` con niveles configurables (`debug`, `info`, `warn`, `error`) a través de la variable `LOG_LEVEL`.
+
+- Cada tool registra su invocación con `logger.info` (antes de validar el input).
+- Los logs escriben a **stderr** para no corromper el protocolo stdio del MCP.
+- El logger **sanitiza la salida**: si el `GITHUB_TOKEN` aparece en un mensaje, se reemplaza por `[REDACTED]`.
+
+```bash
+LOG_LEVEL=debug npm run dev
+```
+
+## Estrategia de retry (resiliencia)
+
+El proyecto implementa **dos capas de reintento** ante errores transitorios:
+
+### Capa 1: Plugin de Octokit (`src/github/client.ts`)
+
+Usa `@octokit/plugin-retry` para reintentar automáticamente a nivel HTTP cada llamada a la API de GitHub:
+
+- `403` por rate limit (respeta el header `Retry-After`).
+- `429` (too many requests).
+- Errores `5xx` transitorios (`500`, `502`, `503`, `504`).
+- Errores de red (`ENOTFOUND`, `ECONNRESET`, etc.).
+
+Los errores permanentes (`400`, `401`, `404`, `422`) **no** se reintentan porque sería inútil:
+
+```typescript
+octokit = new GitHubClient({
+  auth: token,
+  retry: { doNotRetry: [400, 401, 404, 422] },
+});
+```
+
+### Capa 2: `withRetry` con exponential backoff (`src/utils/retry.ts`)
+
+Refuerzo propio que reintenta cuando la operación lanza `RateLimitError` o `NetworkError` (ya transformados por el manejador de errores):
+
+- Backoff exponencial: `baseDelay * 2^n`, con tope máximo.
+- Respeta el `retryAfter` indicado en `RateLimitError`.
+- Loguea cada reintento con `logger.warn`.
+- Configurable: `maxRetries`, `baseDelayMs`, `maxDelayMs`.
+
+Ambas capas coexisten: Octokit reintenta a nivel HTTP y `withRetry` cubre los errores que llegan transformados a la capa de operaciones.
+
 ## Estructura del proyecto
 
 ```
 src/
-├── index.ts              # Entry point: crea el servidor y lo conecta
+├── index.ts              # Entry point: conecta el servidor con el transporte stdio
 ├── errors/               # Clases de error y transformación a mensajes claros
-│   ├── index.ts          #   ValidationError, GitHubAPIError, AuthenticationError, NetworkError
+│   ├── index.ts          #   ValidationError, GitHubAPIError, AuthenticationError,
+│   │                     #   NetworkError, RateLimitError
 │   └── handler.ts        #   handleGitHubError(), getErrorMessage()
 ├── github/               # Capa de integración con la API de GitHub
-│   ├── client.ts         #   Instancia de Octokit autenticada
-│   ├── operations.ts     #   Operaciones: createRepository, createIssue, etc.
+│   ├── client.ts         #   Octokit autenticado + @octokit/plugin-retry
+│   ├── operations.ts     #   Operaciones con withRetry: createRepository, createIssue, etc.
 │   └── types.ts          #   Interfaces TypeScript de GitHub
 ├── schemas/              # Schemas de validación con Zod
 │   └── index.ts
 ├── tools/                # Tools del MCP server
-│   ├── register.ts       #   Registro de todas las tools en el servidor
+│   ├── register.ts       #   Registro de todas las tools + logger.info por invocación
 │   ├── list-repositories.ts
 │   ├── create-repository.ts
 │   ├── create-issue.ts
 │   ├── list-issues.ts
 │   └── create-commit.ts
 └── utils/                # Utilidades comunes
-    ├── logging.ts         #   Logger con niveles (debug, info, warn, error)
-    ├── retry.ts           #   Retry con exponential backoff (rate limiting)
+    ├── logging.ts         #   Logger estructurado con niveles y sanitización de token
+    ├── retry.ts           #   withRetry con exponential backoff (rate limiting)
     ├── server.ts          #   Factory createServer()
     └── types.ts           #   Tipos TypeScript compartidos
-tests/                    # Tests unitarios con Vitest
+tests/                     # Tests unitarios con Vitest (37 tests en 4 archivos)
 ```
 
 ## Manejo de errores
